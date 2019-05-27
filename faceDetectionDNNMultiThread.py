@@ -77,6 +77,7 @@ while True:
     # if the input queue *is* empty, give the current frame to
     # classify
     if inputQueue.empty():
+        print("Put\n")
         inputQueue.put(frame)
 
     # if the output queue *is not* empty, grab the detections
