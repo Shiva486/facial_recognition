@@ -1,6 +1,7 @@
 haarcascade_frontalface_default.xml.save
-.idea/workspace.xml
-.idea/facial_recognition.iml
-.idea/misc.xml
-.idea/modules.xml
-.idea/vcs.xml
+
+### IntelliJ IDEA ###
+.idea
+*.xml
+*.iml
+/out/
