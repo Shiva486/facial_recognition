@@ -2,6 +2,7 @@
 # python faceDetectionDNN.py --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel
 
 from imutils.video import VideoStream
+from imutils.video import FPS
 import numpy as np
 import argparse
 import imutils
@@ -26,6 +27,7 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 print("[INFO] starting video stream...")
 vs = VideoStream(src=0).start()
 time.sleep(2.0)
+fps = FPS().start()
 
 # loop over the frames from the video stream
 while True:
@@ -76,6 +78,12 @@ while True:
     # if the `q` key was pressed, break from the loop
     if key == ord("q"):
         break
+
+    fps.update()
+
+fps.stop()
+print("[INFO] elapsed time: {:.2f}".format(fps.elapsed()))
+print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
 # do a bit of cleanup
 cv2.destroyAllWindows()
