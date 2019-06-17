@@ -79,6 +79,7 @@ while True:
 
     if detections is not None:
         for i in range(0, detections.shape[2]):
+            repeatDetection = False
             confidence = detections[0, 0, i, 2]
 
             if confidence < args["confidence"]:
@@ -92,19 +93,21 @@ while True:
                 (x, y, w, h) = [int(v) for v in trackingBox]
                 isOverlapping = overlap(startX, startY, endX, endY, x, y, x+w, y+h)
                 if isOverlapping:
-                    continue
+                    repeatDetection = True
+                    break
 
-            # draw the bounding box of the face along with the associated probability
-            text = "{:.2f}%".format(confidence * 100)
-            y = startY - 10 if startY - 10 > 10 else startY + 10
-            cv2.rectangle(frame, (startX, startY), (endX, endY),
-                          (0, 0, 255), 2)
-            cv2.putText(frame, text, (startX, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+            if not repeatDetection:
+                # draw the bounding box of the face along with the associated probability
+                text = "{:.2f}%".format(confidence * 100)
+                y = startY - 10 if startY - 10 > 10 else startY + 10
+                cv2.rectangle(frame, (startX, startY), (endX, endY),
+                              (0, 0, 255), 2)
+                cv2.putText(frame, text, (startX, y),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
 
-            initBB = (startX, startY, endX, endY)
-            tracker = cv2.TrackerKCF_create()
-            trackers.add(tracker, frame, initBB)
+                initBB = (startX, startY, endX, endY)
+                tracker = cv2.TrackerKCF_create()
+                trackers.add(tracker, frame, initBB)
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
