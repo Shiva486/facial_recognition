@@ -11,15 +11,17 @@ import imutils
 import time
 import cv2
 
+
 def classify_frame(net, inputQueue, outputQueue):
-	while True:
-		if not inputQueue.empty():
-			frame = inputQueue.get()
-			blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
-                                 (300, 300), (104.0, 177.0, 123.0))
-			net.setInput(blob)
-			detections = net.forward()
-			outputQueue.put(detections)
+    while True:
+        if not inputQueue.empty():
+            frame = inputQueue.get()
+            blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)), 1.0,
+                                         (300, 300), (104.0, 177.0, 123.0))
+            net.setInput(blob)
+            detections = net.forward()
+            outputQueue.put(detections)
+
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--prototxt", required=True,
@@ -34,15 +36,16 @@ args = vars(ap.parse_args())
 print("[INFO] loading model...")
 net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 
+trackers = cv2.MultiTracker_create()
+
 inputQueue = Queue(maxsize=1)
 outputQueue = Queue(maxsize=1)
 detections = None
-count = 0
-peopleInLastFrame = 0
+initBB = None
 
 print("[INFO] starting face detection process...")
 p = Process(target=classify_frame, args=(net, inputQueue,
-	outputQueue,))
+                                         outputQueue,))
 p.daemon = True
 p.start()
 
@@ -53,7 +56,6 @@ time.sleep(2.0)
 fps = FPS().start()
 
 while True:
-    print (count)
     frame = vs.read()
     frame = imutils.resize(frame, width=400)
     (h, w) = frame.shape[:2]
@@ -64,18 +66,19 @@ while True:
     if not outputQueue.empty():
         detections = outputQueue.get()
 
-    peopleInThisFrame = 0
-    if detections is not None:
+    # tracker
+    (success, boxes) = trackers.update(frame)
 
+    for box in boxes:
+        (x, y, w, h) = [int(v) for v in box]
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+    if detections is not None:
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
 
             if confidence < args["confidence"]:
                 continue
-                
-            peopleInThisFrame = peopleInThisFrame + 1
-            if (peopleInThisFrame > peopleInLastFrame):
-                count = count + (peopleInThisFrame - peopleInLastFrame)
 
             # compute the (x, y)-coordinates of the bounding box
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -88,8 +91,10 @@ while True:
                           (0, 0, 255), 2)
             cv2.putText(frame, text, (startX, y),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-                        
-    peopleInLastFrame = peopleInThisFrame
+
+            initBB = (startX, startY, endX, endY)
+            tracker = cv2.TrackerKCF_create()
+            trackers.add(tracker, frame, initBB)
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
