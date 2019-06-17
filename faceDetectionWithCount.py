@@ -34,11 +34,14 @@ args = vars(ap.parse_args())
 print("[INFO] loading model...")
 net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 
+# create KCF tracker
+tracker = cv2.TrackerKCF_create()
+
+initBB = None
+
 inputQueue = Queue(maxsize=1)
 outputQueue = Queue(maxsize=1)
 detections = None
-count = 0
-peopleInLastFrame = 0
 
 print("[INFO] starting face detection process...")
 p = Process(target=classify_frame, args=(net, inputQueue,
@@ -53,43 +56,44 @@ time.sleep(2.0)
 fps = FPS().start()
 
 while True:
-    print (count)
     frame = vs.read()
     frame = imutils.resize(frame, width=400)
     (h, w) = frame.shape[:2]
 
-    if inputQueue.empty():
+    if inputQueue.empty() and initBB is None:
         inputQueue.put(frame)
 
     if not outputQueue.empty():
         detections = outputQueue.get()
+        
+    if initBB is not None:
+        # grab the new bounding box coordinates of the object
+        (success, box) = tracker.update(frame)
+        print (success, initBB)
 
-    peopleInThisFrame = 0;
+        # check to see if the tracking was a success
+        if success:
+            (x, y, w, h) = [int(v) for v in box]
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        else:
+            initBB = None
+
     if detections is not None:
-
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
 
             if confidence < args["confidence"]:
                 continue
-                
-            peopleInThisFrame = peopleInThisFrame + 1
-            if (peopleInThisFrame > peopleInLastFrame):
-                count = count + (peopleInThisFrame - peopleInLastFrame)
 
             # compute the (x, y)-coordinates of the bounding box
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
             (startX, startY, endX, endY) = box.astype("int")
+            if initBB is None:
+                initBB = (startX, startY, endX, endY)
+            tracker.init(frame, (startX, startY, endX-startX, endY-startY))
 
             # draw the bounding box of the face along with the associated probability
-            text = "{:.2f}%".format(confidence * 100)
-            y = startY - 10 if startY - 10 > 10 else startY + 10
-            cv2.rectangle(frame, (startX, startY), (endX, endY),
-                          (0, 0, 255), 2)
-            cv2.putText(frame, text, (startX, y),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-                        
-    peopleInLastFrame = peopleInThisFrame
+            
 
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
