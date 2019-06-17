@@ -11,6 +11,10 @@ import imutils
 import time
 import cv2
 
+def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2):
+    hoverlaps = (startX1 <= endX2) and (endX1 >= startX2)
+    voverlaps = (startY1 >= endY2) and (endY1 <= startY2)
+    return hoverlaps and voverlaps
 
 def classify_frame(net, inputQueue, outputQueue):
     while True:
@@ -83,6 +87,12 @@ while True:
             # compute the (x, y)-coordinates of the bounding box
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
             (startX, startY, endX, endY) = box.astype("int")
+
+            for trackingBox in boxes:
+                (x, y, w, h) = [int(v) for v in trackingBox]
+                isOverlapping = overlap(startX, startY, endX, endY, x, y, x+w, y+h)
+                if isOverlapping:
+                    continue
 
             # draw the bounding box of the face along with the associated probability
             text = "{:.2f}%".format(confidence * 100)
