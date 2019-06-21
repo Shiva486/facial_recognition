@@ -85,7 +85,7 @@ while True:
 
             isOverlapping = False
             currentTime = time.time()
-            if (currentTime - lastDetectionTime > 3)
+            if currentTime - lastDetectionTime > 3:
                 lastDetection = None
 
             if lastDetection is not None:
