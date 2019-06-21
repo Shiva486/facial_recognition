@@ -11,6 +11,11 @@ import imutils
 import time
 import cv2
 
+def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2):
+    hoverlaps = (startX1 <= endX2) and (endX1 >= startX2)
+    voverlaps = (startY1 >= endY2) and (endY1 <= startY2)
+    return hoverlaps and voverlaps
+
 def classify_frame(net, inputQueue, outputQueue):
 	while True:
 		if not inputQueue.empty():
@@ -39,6 +44,7 @@ outputQueue = Queue(maxsize=1)
 detections = None
 count = 0
 peopleInLastFrame = 0
+lastDetection = None
 
 print("[INFO] starting face detection process...")
 p = Process(target=classify_frame, args=(net, inputQueue,
@@ -72,14 +78,17 @@ while True:
 
             if confidence < args["confidence"]:
                 continue
-                
+
+            (lastStartX, lastStartY, lastEndX, lastEndY) = lastDetection
+            isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY)
             peopleInThisFrame = peopleInThisFrame + 1
-            if (peopleInThisFrame > peopleInLastFrame):
+            if not isOverlapping and peopleInThisFrame > peopleInLastFrame:
                 count = count + (peopleInThisFrame - peopleInLastFrame)
 
             # compute the (x, y)-coordinates of the bounding box
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
             (startX, startY, endX, endY) = box.astype("int")
+            lastDetection = (startX, startY, endX, endY)
 
             # draw the bounding box of the face along with the associated probability
             text = "{:.2f}%".format(confidence * 100)
