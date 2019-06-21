@@ -72,23 +72,25 @@ while True:
 
     peopleInThisFrame = 0
     if detections is not None:
-
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
 
             if confidence < args["confidence"]:
                 continue
 
-            (lastStartX, lastStartY, lastEndX, lastEndY) = lastDetection
-            isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY)
-            peopleInThisFrame = peopleInThisFrame + 1
-            if not isOverlapping and peopleInThisFrame > peopleInLastFrame:
-                count = count + (peopleInThisFrame - peopleInLastFrame)
-
             # compute the (x, y)-coordinates of the bounding box
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
             (startX, startY, endX, endY) = box.astype("int")
-            lastDetection = (startX, startY, endX, endY)
+
+            isOverlapping = False
+            if lastDetection is not None:
+                (lastStartX, lastStartY, lastEndX, lastEndY) = lastDetection
+                isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY)
+
+            if not isOverlapping:
+                peopleInThisFrame = peopleInThisFrame + 1
+                if peopleInThisFrame > peopleInLastFrame:
+                    count = count + (peopleInThisFrame - peopleInLastFrame)
 
             # draw the bounding box of the face along with the associated probability
             text = "{:.2f}%".format(confidence * 100)
@@ -97,6 +99,8 @@ while True:
                           (0, 0, 255), 2)
             cv2.putText(frame, text, (startX, y),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+
+            lastDetection = (startX, startY, endX, endY)
                         
     peopleInLastFrame = peopleInThisFrame
 
