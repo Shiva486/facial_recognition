@@ -11,9 +11,11 @@ import imutils
 import time
 import cv2
 
-def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2):
+def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2, previousTime, currentTime):
+    if currentTime - previousTime > 1:
+        return False
     hoverlaps = (startX1 <= endX2) and (endX1 >= startX2)
-    voverlaps = (startY1 >= endY2) and (endY1 <= startY2)
+    voverlaps = (startY1 <= endY2) and (endY1 >= startY2)
     return hoverlaps and voverlaps
 
 def classify_frame(net, inputQueue, outputQueue):
@@ -45,6 +47,7 @@ detections = None
 count = 0
 peopleInLastFrame = 0
 lastDetection = None
+lastDetectionTime = None
 
 print("[INFO] starting face detection process...")
 p = Process(target=classify_frame, args=(net, inputQueue,
@@ -85,7 +88,7 @@ while True:
             isOverlapping = False
             if lastDetection is not None:
                 (lastStartX, lastStartY, lastEndX, lastEndY) = lastDetection
-                isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY)
+                isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY, lastDetectionTime, time.time())
 
             if not isOverlapping:
                 peopleInThisFrame = peopleInThisFrame + 1
@@ -101,6 +104,7 @@ while True:
                         cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
 
             lastDetection = (startX, startY, endX, endY)
+            lastDetectionTime = time.time()
                         
     peopleInLastFrame = peopleInThisFrame
 
