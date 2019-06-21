@@ -12,7 +12,7 @@ import time
 import cv2
 
 def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2, previousTime, currentTime):
-    if currentTime - previousTime > 3:
+    if currentTime - previousTime > 5:
         return False
     hoverlaps = (startX1 <= endX2) and (endX1 >= startX2)
     voverlaps = (startY1 <= endY2) and (endY1 >= startY2)
