@@ -11,9 +11,7 @@ import imutils
 import time
 import cv2
 
-def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2, previousTime, currentTime):
-    if currentTime - previousTime > 1:
-        return False
+def overlap(startX1, startY1, endX1, endY1, startX2, startY2, endX2, endY2):
     hoverlaps = (startX1 <= endX2) and (endX1 >= startX2)
     voverlaps = (startY1 <= endY2) and (endY1 >= startY2)
     return hoverlaps and voverlaps
@@ -86,9 +84,13 @@ while True:
             (startX, startY, endX, endY) = box.astype("int")
 
             isOverlapping = False
+            currentTime = time.time()
+            if (currentTime - lastDetectionTime > 3)
+                lastDetection = None
+
             if lastDetection is not None:
                 (lastStartX, lastStartY, lastEndX, lastEndY) = lastDetection
-                isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY, lastDetectionTime, time.time())
+                isOverlapping = overlap(startX, startY, endX, endY, lastStartX, lastStartY, lastEndX, lastEndY)
 
             if not isOverlapping:
                 peopleInThisFrame = peopleInThisFrame + 1
