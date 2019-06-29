@@ -59,7 +59,7 @@ peopleInLastFrame = 0
 lastDetection = None
 lastDetectionTime = None
 startTime = time.time()
-api = ApiClient(token='A1E-ef10fe32d5c9ff6ced2fb6eaaeb880cc1037')
+api = ApiClient(token='A1E-CxwT7tKlYBQD5tbTOWpVAOzOxjbIha')
 ubidotsCount = api.get_variable('5d074d92c03f970688cf8483')
 
 print("[INFO] starting face detection process...")
