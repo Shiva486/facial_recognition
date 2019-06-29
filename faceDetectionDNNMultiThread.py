@@ -37,7 +37,7 @@ def save_count_ubidots(count, startTime):
         currentTime = time.time()
         if currentTime - startTime.value > 120:
             startTime.value = time.time()
-            savedValue = ubidotsCount.save_value({'value': int(count.value)})
+            savedValue = ubidotsCount.save_value({'value': count.value})
             print("Saved count in ubidots: ", savedValue)
 
 
