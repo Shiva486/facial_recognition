@@ -29,7 +29,7 @@ def classify_frame(net, inputQueue, outputQueue):
 			detections = net.forward()
 			outputQueue.put(detections)
 
-def save_count_ubidots(count, ubidotsCount, startTime):
+def save_count_ubidots():
     while True:
         currentTime = time.time()
         if currentTime - startTime > 120:
@@ -68,7 +68,7 @@ p.daemon = True
 p.start()
 
 print("[INFO] starting ubidots process...")
-p = Process(target=save_count_ubidots, args=(count, ubidotsCount, startTime,))
+p = Process(target=save_count_ubidots)
 p.daemon = True
 p.start()
 
