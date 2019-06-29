@@ -79,7 +79,6 @@ time.sleep(2.0)
 fps = FPS().start()
 
 while True:
-    print (count)
     frame = vs.read()
     frame = imutils.resize(frame, width=400)
     (h, w) = frame.shape[:2]
