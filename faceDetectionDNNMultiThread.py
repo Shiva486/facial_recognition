@@ -5,6 +5,7 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from multiprocessing import Process
 from multiprocessing import Queue
+from multiprocessing import Value
 from ubidots import ApiClient
 import numpy as np
 import argparse
@@ -29,12 +30,14 @@ def classify_frame(net, inputQueue, outputQueue):
 			detections = net.forward()
 			outputQueue.put(detections)
 
-def save_count_ubidots():
+def save_count_ubidots(count, startTime):
+    api = ApiClient(token='A1E-CxwT7tKlYBQD5tbTOWpVAOzOxjbIha')
+    ubidotsCount = api.get_variable('5d074d92c03f970688cf8483')
     while True:
         currentTime = time.time()
-        if currentTime - startTime > 120:
-            startTime = time.time()
-            savedValue = ubidotsCount.save_value({'value': count})
+        if currentTime - startTime.value > 120:
+            startTime.value = time.time()
+            savedValue = ubidotsCount.save_value({'value': count.value})
             print("Saved count in ubidots: ", savedValue)
 
 
@@ -54,13 +57,11 @@ net = cv2.dnn.readNetFromCaffe(args["prototxt"], args["model"])
 inputQueue = Queue(maxsize=1)
 outputQueue = Queue(maxsize=1)
 detections = None
-count = 0
+count = Value('i', 0)
 peopleInLastFrame = 0
 lastDetection = None
 lastDetectionTime = None
-startTime = time.time()
-api = ApiClient(token='A1E-CxwT7tKlYBQD5tbTOWpVAOzOxjbIha')
-ubidotsCount = api.get_variable('5d074d92c03f970688cf8483')
+startTime = Value('d', time.time())
 
 print("[INFO] starting face detection process...")
 p = Process(target=classify_frame, args=(net, inputQueue, outputQueue,))
@@ -68,7 +69,7 @@ p.daemon = True
 p.start()
 
 print("[INFO] starting ubidots process...")
-p = Process(target=save_count_ubidots)
+p = Process(target=save_count_ubidots, args=(count, startTime,))
 p.daemon = True
 p.start()
 
@@ -109,7 +110,8 @@ while True:
             if not isOverlapping:
                 peopleInThisFrame = peopleInThisFrame + 1
                 if peopleInThisFrame > peopleInLastFrame:
-                    count = count + (peopleInThisFrame - peopleInLastFrame)
+                    with count.get_lock():
+                        count.value = count.value + (peopleInThisFrame - peopleInLastFrame)
 
             # draw the bounding box of the face along with the associated probability
             text = "{:.2f}%".format(confidence * 100)
