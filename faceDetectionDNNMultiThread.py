@@ -5,6 +5,7 @@ from imutils.video import VideoStream
 from imutils.video import FPS
 from multiprocessing import Process
 from multiprocessing import Queue
+from ubidots import ApiClient
 import numpy as np
 import argparse
 import imutils
@@ -28,6 +29,15 @@ def classify_frame(net, inputQueue, outputQueue):
 			detections = net.forward()
 			outputQueue.put(detections)
 
+def save_count_ubidots(count, ubidotsCount, startTime):
+    while True:
+        currentTime = time.time()
+        if currentTime - startTime > 120:
+            startTime = time.time()
+            savedValue = ubidotsCount.save_value({'value': count})
+            print("Saved count in ubidots: ", savedValue)
+
+
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--prototxt", required=True,
                 help="path to Caffe 'deploy' prototxt file")
@@ -48,10 +58,17 @@ count = 0
 peopleInLastFrame = 0
 lastDetection = None
 lastDetectionTime = None
+startTime = time.time()
+api = ApiClient(token='A1E-ef10fe32d5c9ff6ced2fb6eaaeb880cc1037')
+ubidotsCount = api.get_variable('5d074d92c03f970688cf8483')
 
 print("[INFO] starting face detection process...")
-p = Process(target=classify_frame, args=(net, inputQueue,
-	outputQueue,))
+p = Process(target=classify_frame, args=(net, inputQueue, outputQueue,))
+p.daemon = True
+p.start()
+
+print("[INFO] starting ubidots process...")
+p = Process(target=save_count_ubidots, args=(count, ubidotsCount, startTime,))
 p.daemon = True
 p.start()
 
