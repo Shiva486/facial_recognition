@@ -8,4 +8,7 @@ pip install dlib
 pip install ubidots==1.6.6
 ```
 - Command for starting the application:<br/> 
-> *python faceDetectionDNNMultiThread.py --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel*
+``` 
+export DISPLAY=:0
+*python faceDetectionDNNMultiThread.py --prototxt deploy.prototxt.txt --model res10_300x300_ssd_iter_140000.caffemodel*
+```
